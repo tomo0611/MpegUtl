@@ -5,9 +5,12 @@
 */
 
 #include <windows.h>
+#include <uxtheme.h>
 #include <stdlib.h>
 #include <string.h>
 #include <tchar.h>
+
+#include "resource1.h"
 
 // Global variables
 
@@ -37,12 +40,12 @@ int CALLBACK WinMain(
     wcex.cbClsExtra = 0;
     wcex.cbWndExtra = 0;
     wcex.hInstance = hInstance;
-    wcex.hIcon = LoadIcon(hInstance, IDI_APPLICATION);
+    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
     wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
     wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wcex.lpszMenuName = NULL;
+    wcex.lpszMenuName = MAKEINTRESOURCE(IDR_MENU1);
     wcex.lpszClassName = szWindowClass;
-    wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
+    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_ICON1));
 
     if (!RegisterClassEx(&wcex))
     {
@@ -72,7 +75,7 @@ int CALLBACK WinMain(
         szTitle,
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT,
-        500, 100,
+        CW_USEDEFAULT, CW_USEDEFAULT,
         NULL,
         NULL,
         hInstance,
@@ -89,13 +92,15 @@ int CALLBACK WinMain(
         return 1;
     }
 
+
+    SetWindowTheme(hWnd, L"DarkMode_Explorer", NULL);
+
     // The parameters to ShowWindow explained:
     // hWnd: the value returned from CreateWindow
     // nCmdShow: the fourth parameter from WinMain
     ShowWindow(hWnd,
         nCmdShow);
     UpdateWindow(hWnd);
-
     // Main message loop:
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0))
@@ -119,6 +124,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     HDC hdc;
     TCHAR greeting[] = _T("Hello, Windows desktop!");
 
+    HICON hIcon1 = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
+
     switch (message)
     {
     case WM_PAINT:
@@ -130,8 +137,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         TextOut(hdc,
             5, 5,
             greeting, _tcslen(greeting));
-        // End application-specific layout section.
 
+        DrawIcon(hdc, 50, 50, hIcon1);
+
+        // End application-specific layout section.
         EndPaint(hWnd, &ps);
         break;
     case WM_DESTROY:
