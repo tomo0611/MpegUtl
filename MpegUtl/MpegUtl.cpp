@@ -1,4 +1,4 @@
-/*
+﻿/*
 *  MpegUtl
 *  Author:
 *  * Tomohiro Oi		<tomo0611@hotmail.com>
@@ -21,6 +21,8 @@ static TCHAR szWindowClass[] = _T("MpegUtl");
 static TCHAR szTitle[] = _T("MpegUtl v0.1");
 
 HINSTANCE hInst;
+
+wchar_t* greeting = new wchar_t[100];
 
 // Forward declarations of functions included in this code module:
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -122,15 +124,132 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     PAINTSTRUCT ps;
     HDC hdc;
-    TCHAR greeting[] = _T("Hello, Windows desktop!");
 
     HICON hIcon1 = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
 
     switch (message)
     {
+    case WM_COMMAND:
+        switch (LOWORD(wParam))
+        {
+        case ID_40003:
+            OPENFILENAME ofn;       // common dialog box structure
+            TCHAR szFile[2048] = { 0 };       // if using TCHAR macros
+
+            LPWSTR szFileTitle = new TCHAR[256];
+
+            // Initialize OPENFILENAME
+            ZeroMemory(&ofn, sizeof(ofn));
+            ofn.lStructSize = sizeof(ofn);
+            ofn.hwndOwner = hWnd;
+            ofn.lpstrFile = szFile;
+            ofn.nMaxFile = sizeof(szFile);
+            ofn.lpstrFilter = _T("AviUtl Project File(.aup)\0*.aup\0");
+            ofn.nFilterIndex = 1;
+            ofn.lpstrFileTitle = szFileTitle;
+            ofn.nMaxFileTitle = 256;
+            ofn.lpstrInitialDir = NULL;
+            ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+            if (GetOpenFileName(&ofn) == TRUE)
+            {
+                // use ofn.lpstrFile
+                OutputDebugStringW(L"Opened -> ");
+                OutputDebugStringW(szFileTitle);
+                OutputDebugStringW(L"\n\n");
+                /* ファイルのオープン*/
+                HANDLE hFile = ::CreateFile(
+                    szFile
+                    , GENERIC_READ
+                    , 0
+                    , NULL
+                    , OPEN_EXISTING
+                    , FILE_ATTRIBUTE_NORMAL
+                    , NULL
+                );
+                if (INVALID_HANDLE_VALUE == hFile) {
+                    OutputDebugStringW(L"ファイルオープン失敗(");
+                    //OutputDebugStringW(::GetLastError());
+                    OutputDebugStringW(L")\n");
+                }
+                else {
+
+                    // ファイルサイズの取得
+                    DWORD dwFileSize = ::GetFileSize(hFile, NULL);
+
+                    TCHAR buff[80];
+                    wsprintf(buff, L"ファイルサイズ = %d\n", dwFileSize);
+                    OutputDebugStringW(buff);
+
+                    // メモリの確保
+                    BYTE* bpMemory = (BYTE*)::malloc(dwFileSize);
+                    if (NULL == bpMemory) {
+                        // メモリ不足
+                        OutputDebugStringW(L"メモリ不足\n");
+                        // ファイルクローズ
+                        ::CloseHandle(hFile);
+
+                        // メモリの解放
+                        if (NULL != bpMemory) {
+                            free(bpMemory);
+                        }
+                    }
+                    else {
+
+                        // 読み取ったバイト数を格納する領域
+                        DWORD dwNumberOfByteRead = 0;
+
+                        // ファイルの読み込み
+                        if (0 == ::ReadFile(hFile, bpMemory, dwFileSize, &dwNumberOfByteRead, NULL)) {
+
+                            // ファイル読み込み失敗
+                            TCHAR buff[80];
+                            wsprintf(buff, L"ファイル読み込み失敗(%d)\n", ::GetLastError());
+                            OutputDebugStringW(buff);
+                        }
+                        // ファイルクローズ
+                        ::CloseHandle(hFile);
+
+
+
+                        // 読み込んだ内容の表示
+                        wchar_t* Warray = new wchar_t[dwFileSize];
+                        size_t outSize;
+                        mbstowcs_s(&outSize, Warray, 64 ,(char*)bpMemory, dwFileSize-1);
+                        // AviUtl ProjectFile version 0.18読み込み量(32) なぜなのか
+
+                        OutputDebugStringW(Warray);
+
+                        TCHAR buff[80];
+                        wsprintf(buff, L"読み込み量(%d)\n", outSize);
+                        OutputDebugStringW(buff);
+
+                        wsprintf(greeting, L"ファイル : (%s)", Warray);
+
+                        TCHAR buff2[80];
+                        wsprintf(buff2, L"MpegUtl v0.1 - %s (%s)\n", szFileTitle, Warray);
+
+                        SetWindowText(hWnd, buff2);
+
+                        InvalidateRect(hWnd, NULL, TRUE);  //領域無効化
+                        UpdateWindow(hWnd);                //再描画命令
+
+                        OutputDebugStringW(greeting);
+
+                        // メモリの解放
+                        if (NULL != bpMemory) {
+                            free(bpMemory);
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        break;
     case WM_PAINT:
         hdc = BeginPaint(hWnd, &ps);
 
+        OutputDebugStringW(L"WM_PAINT\n");
         // Here your application is laid out.
         // For this introduction, we just print out "Hello, Windows desktop!"
         // in the top left corner.
